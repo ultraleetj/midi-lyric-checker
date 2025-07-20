@@ -144,7 +144,7 @@ Algunos programas de notación o karaoke podrían poner notas en una pista, letr
 - **Archivo > Configurar Pistas** (Ctrl+T) - Reconfigurar parejas de pistas
 - **Archivo > Limpiar** (Ctrl+C) - Limpiar o cerrar archivo actual, descargar de memoria.
 - **Archivo > Actualizar** (F5) - Recargar archivo actual
-- ** Archivo> Seleccionar dispositivo MIDI ** Elija un dispositivo de salida diferente o seleccione uno si no se encuentra el dispositivo MIDI predeterminado.
+- **Archivo > Seleccionar dispositivo MIDI** - Elija un dispositivo de salida diferente o seleccione uno si no se encuentra el dispositivo MIDI predeterminado.
 - **Archivo > Propiedades de Pista** (Ctrl+P) - Configurar pista MIDI, instrumento, banco, volumen
 - **Archivo > Configuración de Metrónomo** (Ctrl+M) - Configurar tempo, sonidos del metrónomo. Se usa únicamente el canal midi 10
 - **menú Idioma** - Cambiar entre inglés y español
