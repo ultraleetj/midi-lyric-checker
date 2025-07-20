@@ -34,7 +34,7 @@ download: Fully compiled binary .exe file from releases section (at the bottom)
 
 ### program overview
 The app has three main elements: a list view with tracks, a lyrics display field, and a status field. You must load a file first. You can select the track that will be played using the list. Only one track plays at a time. The lyrics field will highlight and scroll the lyrics. Accented characters due to midi limitations will be shown as some strange symbols, this will hopefully be fixed at some point. The status field displays the note you are on, say, three out of 50, and the syllable as well, the tempo and the selected tracks for notes and lyrics.
-Some notation or karaoke programs could put notes in one track, lyrics in another track, or both notes and lyrics in the same track. The program supports both and has automatic detection. To start, open a file. You will then select track pairs for: One track containing notes, and another track containing lyrics, or  simply accept or check the default detection. It is possible that lyrics may be incorrectly displayed for a track, but this will depend on the specific knoledge of which track has the corresponding lyrics to the notes track. If there are many voices to check in a file, in the case of chorales, you can select one or many pairs to review. There is also the possibility of  pairing a track with notes and no lyrics.
+Some notation or karaoke programs could put notes in one track, lyrics in another track, or both notes and lyrics in the same track. The program supports both and has automatic detection. To start, open a file. You will then select track pairs for: One track containing notes, and another track containing lyrics, or  simply accept or check the default detection. It is possible that lyrics may be incorrectly displayed for a track, but this will depend on the specific knoledge of which track has the corresponding lyrics to the notes track. If there are many voices to check in a file, in the case of chorales, you can select one or many pairs to review. There is also the possibility of  pairing a track with notes and no lyrics to use with instrumental accompanying parts for example.
 
 ### Navigation and playback controls
 - **Space** - Play/Pause
@@ -77,7 +77,7 @@ Some notation or karaoke programs could put notes in one track, lyrics in anothe
 - Synchronized with track playback timing
 
 ### Accessibility
-- Screen reader support via accessible-output2. Announces lyric syllables in the first beat  of each bar during playback and each one as you move manually through notes. Fully accessible interface via WX python.
+- Various screen reader support (NVDA, windows narrator, jaws) via accessible-output2. Announces lyric syllables in the first beat  of each bar during playback and each one as you move manually through notes. Fully accessible interface via WX python.
 - Keyboard-only navigation
 - Status information display updates automatically.
 
@@ -172,7 +172,7 @@ Algunos programas de notación o karaoke podrían poner notas en una pista, letr
 - Sincronizado con  tiempo real y reproducción de pista
 
 ### Accesibilidad
-- Soporte para lectores de pantalla usando accessible-output2. Anuncia las sílabas cada primer tiempo de cada compás, y  cada una cuando se mueve manualmente. Interfaz de usuario completamente accesible mediante wx Python.
+- Soporte para varios lectores de pantalla (jaws, narrador de windows, nvda) usando accessible-output2. Anuncia las sílabas cada primer tiempo de cada compás, y  cada una cuando se mueve manualmente. Interfaz de usuario completamente accesible mediante wx Python.
 - Navegación solo con teclado
 - Visualización clara de información de estado se actualiza automáticamente.
 
@@ -199,3 +199,4 @@ Este proyecto es código abierto. Siéntete libre de modificar y distribuir seg�
 Contributions are welcome! Please feel free to submit issues and enhancement requests.
 
 ¡Las contribuciones son bienvenidas! Por favor siéntete libre de enviar problemas y solicitudes de mejoras.
+
