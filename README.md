@@ -2,7 +2,7 @@
 ## MIDI Lyric Checker
 
 A fully portable application for reviewing MIDI files with synchronized lyrics display and announcement, designed for blind musicians, karaoke enthusiasts.
-download: Fully compiled binary .exe file from releases section (at the bottom)
+download: Fully compiled binary .exe file [from releases section](https://github.com/ultraleetj/midi-lyric-checker/releases)
 
 ## Features
 
@@ -98,7 +98,7 @@ Some notation or karaoke programs could put notes in one track, lyrics in anothe
 ## MIDI Lyric Checker
 
 Una aplicación completamente portable para revisar archivos MIDI con visualización y audición sincronizada de letras, diseñada para músicos ciegos, entusiastas del karaoke.
-Descargar: Archivo ejecutable binario (compilado) desde la sección releases, abajo.
+Descargar: Archivo ejecutable binario (compilado) [desde la sección releases](https://github.com/ultraleetj/midi-lyric-checker/releases).
 
 ## Funciones
 
