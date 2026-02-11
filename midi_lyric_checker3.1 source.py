@@ -1,8 +1,6 @@
-import os
 import sys
 import time
 import threading
-import copy
 
 # Handle PyInstaller
 if getattr(sys, 'frozen', False):
@@ -66,10 +64,10 @@ STRINGS = {
         'enable_metronome': 'Enable Metronome',
         'track_pairs': 'Track Pairs:',
         'status': 'Status:',
-        'controls': 'Space=Play/Pause, Alt+Arrows=Navigate, Home/End=Start/End, F4=Metronome, F6=Auto Announce',
+        'controls': 'Space=Play/Pause, Alt+Arrows=Navigate, Home/End=Start/End, F3=Find Next, F4=Metronome, F6=Announce, F7=Notes, Ctrl+C=Copy, Ctrl+F=Find',
         'open_midi': '&Open MIDI File\tCtrl+O',
         'configure_tracks': '&Configure Tracks\tCtrl+T',
-        'clear': '&Clear\tCtrl+C',
+        'clear': '&Clear\tCtrl+W',
         'refresh': '&Refresh file\tF5',
         'select_midi_device': '&Select MIDI Device',
         'track_properties_menu': '&Track Properties\tCtrl+P',
@@ -126,8 +124,26 @@ STRINGS = {
         'auto_announce': 'Auto announce:',
         'on': 'On',
         'off': 'Off',
+        'pairs': 'pairs',
+        'file_refreshed': 'File refreshed.',
         'yes': 'Yes',
-        'no': 'No'
+        'no': 'No',
+        'copy_lyrics': '&Copy Lyrics\tCtrl+C',
+        'lyrics_copied': 'Lyrics copied to clipboard.',
+        'no_lyrics_to_copy': 'No lyrics to copy.',
+        'messages_skipped': 'messages skipped during playback.',
+        'midi_reconnected': 'MIDI device reconnected.',
+        'midi_lost': 'MIDI device lost.',
+        'toggle_note_names': '&Toggle Note Names\tF7',
+        'note_names_on': 'Note names on',
+        'note_names_off': 'Note names off',
+        'note_names': 'Note names:',
+        'find': '&Find in Lyrics\tCtrl+F',
+        'find_next': 'Find &Next\tF3',
+        'search_title': 'Find in Lyrics',
+        'search_prompt': 'Search for:',
+        'not_found': 'Not found.',
+        'no_lyrics_to_search': 'No lyrics to search.'
     },
     'es': {
         'title': 'Verificador de Letras MIDI',
@@ -152,10 +168,10 @@ STRINGS = {
         'enable_metronome': 'Activar Metrónomo',
         'track_pairs': 'Parejas de Pistas:',
         'status': 'Estado:',
-        'controls': 'Espacio=Reproducir/Pausa, Alt+Flechas=Navegar, Inicio/Fin=Principio/Final, F4=Metrónomo, F6=Activar desactivar Anuncios',
+        'controls': 'Espacio=Reproducir/Pausa, Alt+Flechas=Navegar, Inicio/Fin=Principio/Final, F3=Buscar Sig., F4=Metrónomo, F6=Anuncios, F7=Notas, Ctrl+C=Copiar, Ctrl+F=Buscar',
         'open_midi': '&Abrir Archivo MIDI\tCtrl+O',
         'configure_tracks': '&Configurar Pistas\tCtrl+T',
-        'clear': '&Limpiar\tCtrl+C',
+        'clear': '&Limpiar\tCtrl+W',
         'refresh': '&Actualizar\tF5',
         'select_midi_device': '&Seleccionar Dispositivo MIDI',
         'track_properties_menu': '&Propiedades de Pista\tCtrl+P',
@@ -212,8 +228,26 @@ STRINGS = {
         'auto_announce': 'Anuncio de letras:',
         'on': 'Activado',
         'off': 'Desactivado',
+        'pairs': 'pares',
+        'file_refreshed': 'Archivo actualizado.',
         'yes': 'Sí',
-        'no': 'No'
+        'no': 'No',
+        'copy_lyrics': '&Copiar Letras\tCtrl+C',
+        'lyrics_copied': 'Letras copiadas al portapapeles.',
+        'no_lyrics_to_copy': 'No hay letras para copiar.',
+        'messages_skipped': 'mensajes omitidos durante la reproducción.',
+        'midi_reconnected': 'Dispositivo MIDI reconectado.',
+        'midi_lost': 'Dispositivo MIDI perdido.',
+        'toggle_note_names': '&Alternar Nombres de Notas\tF7',
+        'note_names_on': 'Nombres de notas activados',
+        'note_names_off': 'Nombres de notas desactivados',
+        'note_names': 'Nombres de notas:',
+        'find': '&Buscar en Letras\tCtrl+F',
+        'find_next': 'Buscar &Siguiente\tF3',
+        'search_title': 'Buscar en Letras',
+        'search_prompt': 'Buscar:',
+        'not_found': 'No encontrado.',
+        'no_lyrics_to_search': 'No hay letras para buscar.'
     }
 }
 
@@ -231,6 +265,8 @@ class LanguageManager:
 # Global language manager
 lang = LanguageManager()
 
+NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+
 class TrackPairingDialog(wx.Dialog):
     def __init__(self, parent, track_info):
         super().__init__(parent, title=lang.get('track_config'), size=(500, 400))
@@ -240,14 +276,10 @@ class TrackPairingDialog(wx.Dialog):
         # Create filtered lists for selection
         self.notes_tracks = []  # Tracks with notes
         self.lyrics_tracks = []  # Tracks with lyrics (or option for no lyrics)
-        
-        # Filter tracks with notes for notes selection
+
         for i, (name, has_notes, has_lyrics) in enumerate(track_info):
             if has_notes:
                 self.notes_tracks.append((i, name))
-        
-        # Filter tracks with lyrics for lyrics selection, plus "No lyrics" option
-        for i, (name, has_notes, has_lyrics) in enumerate(track_info):
             if has_lyrics:
                 self.lyrics_tracks.append((i, name))
         # Always add "No lyrics" option at the end
@@ -461,7 +493,7 @@ class TrackPropertiesDialog(wx.Dialog):
         
     def get_values(self):
         return {
-            'channel': self.channel_spin.GetValue() - 1,  # Convert to 0-15 for MIDI
+            'channel': self.channel_spin.GetValue(),  # Store 1-based, convert at MIDI send time
             'instrument': self.inst_spin.GetValue(),
             'bank': self.bank_spin.GetValue(),
             'volume': self.vol_spin.GetValue()
@@ -534,7 +566,6 @@ class MidiLyricChecker(wx.Frame):
         self.play_thread = None
         
         # Data structures
-        self.track_names = []
         self.track_pairs = []
         self.notes = []
         self.timed_lyrics = []
@@ -550,13 +581,18 @@ class MidiLyricChecker(wx.Frame):
         self.tempo = 120
         self.downbeat_note = 76
         self.upbeat_note = 77
-        self.beat_count = 0
         self.metronome_thread = None
         # Accessibility settings
         self.auto_announce_lyrics = True
         self.last_announced_lyric = None
+        self.last_announced_lyric_index = -1
         self.current_single_lyric = None
-        
+        self.current_lyric_index = -1
+        self.announce_note_names = False
+        self.search_term = ''
+        self.search_results = []
+        self.search_index = -1
+
         # UI elements for language updates
         self.track_label = None
         self.lyric_label = None
@@ -580,25 +616,23 @@ class MidiLyricChecker(wx.Frame):
         vbox.Add(self.track_label, 0, wx.EXPAND | wx.ALL, 5)
         self.track_list = wx.ListBox(panel)
         self.track_list.Bind(wx.EVT_LISTBOX, self.on_track_select)
+        vbox.Add(self.track_list, 1, wx.EXPAND | wx.ALL, 5)
 
         # Lyric display
         self.lyric_label = wx.StaticText(panel, label=lang.get('lyrics'))
         vbox.Add(self.lyric_label, 0, wx.EXPAND | wx.ALL, 5)
         self.lyric_display = wx.TextCtrl(panel, style=wx.TE_READONLY | wx.TE_MULTILINE)
         self.lyric_display.SetFont(wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
+        vbox.Add(self.lyric_display, 2, wx.EXPAND | wx.ALL, 5)
 
         # Status display
         self.status_label = wx.StaticText(panel, label=lang.get('status'))
         vbox.Add(self.status_label, 0, wx.EXPAND | wx.ALL, 5)
         self.status_display = wx.TextCtrl(panel, style=wx.TE_READONLY | wx.TE_MULTILINE)
+        vbox.Add(self.status_display, 1, wx.EXPAND | wx.ALL, 5)
 
         # Instructions
         self.instructions = wx.StaticText(panel, label=lang.get('controls'))
-
-        # Layout
-        vbox.Add(self.track_list, 1, wx.EXPAND | wx.ALL, 5)
-        vbox.Add(self.lyric_display, 2, wx.EXPAND | wx.ALL, 5)
-        vbox.Add(self.status_display, 1, wx.EXPAND | wx.ALL, 5)
         vbox.Add(self.instructions, 0, wx.EXPAND | wx.ALL, 5)
 
         panel.SetSizer(vbox)
@@ -628,7 +662,7 @@ class MidiLyricChecker(wx.Frame):
                 self.output_port = open_output(selected_port)
                 self.output.speak(f"{lang.get('midi_device')} {selected_port}", interrupt=False)
                 return True
-        except Exception as e:
+        except Exception:
             pass
         return False
 
@@ -647,6 +681,11 @@ class MidiLyricChecker(wx.Frame):
         file_menu.Append(107, lang.get('metronome_settings_menu'))
         file_menu.Append(108, lang.get('toggle_metronome'))
         file_menu.Append(109, lang.get('toggle_auto_announce'))
+        file_menu.Append(112, lang.get('toggle_note_names'))
+        file_menu.AppendSeparator()
+        file_menu.Append(111, lang.get('copy_lyrics'))
+        file_menu.Append(113, lang.get('find'))
+        file_menu.Append(114, lang.get('find_next'))
         file_menu.AppendSeparator()
         file_menu.Append(110, lang.get('quit'))
         menubar.Append(file_menu, lang.get('file_menu'))
@@ -670,6 +709,10 @@ class MidiLyricChecker(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_toggle_metronome, id=108)
         self.Bind(wx.EVT_MENU, self.on_toggle_auto_announce, id=109)
         self.Bind(wx.EVT_MENU, self.on_quit, id=110)
+        self.Bind(wx.EVT_MENU, self.on_copy_lyrics, id=111)
+        self.Bind(wx.EVT_MENU, self.on_toggle_note_names, id=112)
+        self.Bind(wx.EVT_MENU, self.on_find, id=113)
+        self.Bind(wx.EVT_MENU, self.on_find_next, id=114)
         self.Bind(wx.EVT_MENU, self.on_language_english, id=201)
         self.Bind(wx.EVT_MENU, self.on_language_spanish, id=202)
 
@@ -706,6 +749,10 @@ class MidiLyricChecker(wx.Frame):
             self.on_toggle_metronome(event)
         elif keycode == wx.WXK_F6 and not alt and not ctrl:
             self.on_toggle_auto_announce(event)
+        elif keycode == wx.WXK_F7 and not alt and not ctrl:
+            self.on_toggle_note_names(event)
+        elif keycode == wx.WXK_F3 and not alt and not ctrl:
+            self.on_find_next(event)
         elif alt and keycode == wx.WXK_RIGHT and not ctrl:
             self.navigate_next()
         elif alt and keycode == wx.WXK_LEFT and not ctrl:
@@ -750,6 +797,7 @@ class MidiLyricChecker(wx.Frame):
             self.update_displays()
             self.play_current_note()
             self.announce_lyric_if_changed()
+            self.announce_note_name()
 
     def navigate_previous(self):
         if self.current_note_index > 0:
@@ -757,23 +805,36 @@ class MidiLyricChecker(wx.Frame):
             self.update_displays()
             self.play_current_note()
             self.announce_lyric_if_changed()
+            self.announce_note_name()
 
     def announce_lyric_if_changed(self):
         if self.auto_announce_lyrics and self.current_single_lyric:
-            if self.current_single_lyric != self.last_announced_lyric and self.current_single_lyric != lang.get('no_lyrics_found'):
+            # Compare lyric index, not text: different index = new syllable (even if same text = repeat),
+            # same index = melisma (multiple notes on one syllable, don't re-announce)
+            if self.current_lyric_index != self.last_announced_lyric_index and self.current_single_lyric != lang.get('no_lyrics_found'):
                 self.output.speak(self.current_single_lyric, interrupt=True)
                 self.last_announced_lyric = self.current_single_lyric
+                self.last_announced_lyric_index = self.current_lyric_index
+
+    def announce_note_name(self):
+        if self.announce_note_names and self.notes and self.current_pair < len(self.notes):
+            notes = self.notes[self.current_pair]
+            if notes and self.current_note_index < len(notes):
+                _, note, _ = notes[self.current_note_index]
+                name = NOTE_NAMES[note % 12]
+                octave = (note // 12) - 1
+                self.output.speak(f"{name}{octave}", interrupt=not self.auto_announce_lyrics)
 
     def play_current_note(self):
         if not MIDI_AVAILABLE or not self.output_port:
             return
             
         notes = self.notes[self.current_pair]
-        _, note, channel = notes[self.current_note_index] if len(notes[self.current_note_index]) == 3 else (notes[self.current_note_index][0], notes[self.current_note_index][1], 0)
+        _, note, channel = notes[self.current_note_index]
         
         if self.current_pair in self.track_properties:
-            channel = self.track_properties[self.current_pair]['channel']
-        
+            channel = self.track_properties[self.current_pair]['channel'] - 1  # Convert 1-based to 0-based
+
         self.play_note(note, channel)
 
     def update_displays(self):
@@ -825,34 +886,12 @@ class MidiLyricChecker(wx.Frame):
             wx.MessageBox(lang.get('no_file_loaded'), lang.get('no_file_loaded_title'), wx.OK | wx.ICON_WARNING)
             return
             
-        # Analyze tracks
-        track_info = []
-        for i, track in enumerate(self.midi_data.tracks):
-            name = f"{lang.get('track')} {i + 1}"
-            for msg in track:
-                if msg.type == 'track_name':
-                    name = f"{lang.get('track')} {i + 1}: {msg.name.strip()}"
-                    break
-            
-            has_notes, has_lyrics = self.analyze_track_content(track)
-            track_info.append((name, has_notes, has_lyrics))
-        
+        track_info = self.build_track_info()
+
         dlg = TrackPairingDialog(self, track_info)
         if dlg.ShowModal() == wx.ID_OK:
             self.track_pairs = dlg.get_track_pairs()
-            self.process_tracks()
-            self.update_track_list()
-            
-            if self.track_pairs:
-                self.track_list.SetSelection(0)
-                self.current_pair = 0
-                self.current_note_index = 0
-                self.last_announced_lyric = None
-                self.update_displays()
-                
-                total_notes = sum(len(notes) for notes in self.notes)
-                total_lyrics = sum(len(lyrics) for lyrics in self.timed_lyrics)
-                self.output.speak(f"{lang.get('loaded_tracks')} {len(self.track_pairs)} pares, {total_notes} {lang.get('notes_word')}, {total_lyrics} {lang.get('lyrics_found')}", interrupt=True)
+            self._apply_track_pairing()
         dlg.Destroy()
 
     def on_clear(self, event):
@@ -866,35 +905,38 @@ class MidiLyricChecker(wx.Frame):
         self.track_pairs.clear()
         self.current_note_index = 0
         self.last_announced_lyric = None
+        self.last_announced_lyric_index = -1
         self.midi_data = None
 
     def on_refresh(self, event):
-        if self.midi_data:
-            # Re-analyze and show dialog again
-            track_info = []
-            for i, track in enumerate(self.midi_data.tracks):
-                name = f"{lang.get('track')} {i + 1}"
-                for msg in track:
-                    if msg.type == 'track_name':
-                        name = f"{lang.get('track')} {i + 1}: {msg.name.strip()}"
-                        break
-                
-                has_notes, has_lyrics = self.analyze_track_content(track)
-                track_info.append((name, has_notes, has_lyrics))
-            
+        if not self.midi_data:
+            wx.MessageBox(lang.get('no_file_loaded'), lang.get('no_file_loaded_title'), wx.OK | wx.ICON_WARNING)
+            return
+        path = self.midi_data.filename
+        saved_pairs = list(self.track_pairs)
+        self.on_clear(event=None)
+
+        self.midi_data = MidiFile(path)
+        track_info = self.build_track_info()
+
+        need_pairing = (
+            not saved_pairs or
+            len(saved_pairs) > len(self.midi_data.tracks) or
+            any(a >= len(self.midi_data.tracks) or (b is not None and b >= len(self.midi_data.tracks))
+                for (a, b) in saved_pairs)
+        )
+
+        if need_pairing:
             dlg = TrackPairingDialog(self, track_info)
             if dlg.ShowModal() == wx.ID_OK:
                 self.track_pairs = dlg.get_track_pairs()
-                self.process_tracks()
-                self.update_track_list()
-                
-                if self.track_pairs:
-                    self.track_list.SetSelection(0)
-                    self.current_pair = 0
-                    self.current_note_index = 0
-                    self.last_announced_lyric = None
-                    self.update_displays()
             dlg.Destroy()
+        else:
+            self.track_pairs = saved_pairs
+
+        self._apply_track_pairing()
+        self.output.speak(lang.get('file_refreshed'), interrupt=True)
+        wx.CallAfter(self.ensure_midi_auto_select)
 
     def on_select_device(self, event):
         if not MIDI_AVAILABLE:
@@ -915,10 +957,10 @@ class MidiLyricChecker(wx.Frame):
                         self.output_port.close()
                     self.output_port = open_output(selected)
                 except Exception as e:
-                    wx.MessageBox(f"{lang.get('error_opening_device')}:\n{str(e)}", lang.get('error'), wx.OK | wx.ICON_ERROR)
+                    wx.MessageBox(f"{lang.get('error_opening_device')}\n{str(e)}", lang.get('error'), wx.OK | wx.ICON_ERROR)
             dlg.Destroy()
         except Exception as e:
-            wx.MessageBox(f"{lang.get('error_accessing_midi')}:\n{str(e)}", lang.get('error'), wx.OK | wx.ICON_ERROR)
+            wx.MessageBox(f"{lang.get('error_accessing_midi')}\n{str(e)}", lang.get('error'), wx.OK | wx.ICON_ERROR)
 
     def on_track_properties(self, event):
         if self.current_pair < len(self.track_pairs):
@@ -951,10 +993,75 @@ class MidiLyricChecker(wx.Frame):
         self.output.speak(status, interrupt=True)
         self.update_status_display()
 
+    def on_copy_lyrics(self, event):
+        if not self.timed_lyrics or self.current_pair >= len(self.timed_lyrics):
+            self.output.speak(lang.get('no_lyrics_to_copy'), interrupt=True)
+            return
+        lyrics = self.timed_lyrics[self.current_pair]
+        if not lyrics:
+            self.output.speak(lang.get('no_lyrics_to_copy'), interrupt=True)
+            return
+        text = " ".join(lyric[1] for lyric in lyrics)
+        if wx.TheClipboard.Open():
+            wx.TheClipboard.SetData(wx.TextDataObject(text))
+            wx.TheClipboard.Close()
+            self.output.speak(lang.get('lyrics_copied'), interrupt=True)
+
+    def on_toggle_note_names(self, event):
+        self.announce_note_names = not self.announce_note_names
+        status = lang.get('note_names_on') if self.announce_note_names else lang.get('note_names_off')
+        self.output.speak(status, interrupt=True)
+        self.update_status_display()
+
+    def on_find(self, event):
+        if not self.timed_lyrics or self.current_pair >= len(self.timed_lyrics):
+            self.output.speak(lang.get('no_lyrics_to_search'), interrupt=True)
+            return
+        lyrics = self.timed_lyrics[self.current_pair]
+        if not lyrics:
+            self.output.speak(lang.get('no_lyrics_to_search'), interrupt=True)
+            return
+        dlg = wx.TextEntryDialog(self, lang.get('search_prompt'), lang.get('search_title'))
+        if dlg.ShowModal() == wx.ID_OK:
+            self.search_term = dlg.GetValue().strip().lower()
+            self.search_results = []
+            self.search_index = -1
+            for i, (_, text) in enumerate(lyrics):
+                if self.search_term in text.lower():
+                    self.search_results.append(i)
+            if self.search_results:
+                self.on_find_next(event)
+            else:
+                self.output.speak(lang.get('not_found'), interrupt=True)
+        dlg.Destroy()
+
+    def on_find_next(self, event):
+        if not self.search_results:
+            self.output.speak(lang.get('not_found'), interrupt=True)
+            return
+        self.search_index = (self.search_index + 1) % len(self.search_results)
+        lyric_idx = self.search_results[self.search_index]
+        lyrics = self.timed_lyrics[self.current_pair]
+        lyric_time = lyrics[lyric_idx][0]
+        notes = self.notes[self.current_pair]
+        best_note = 0
+        for i, (note_time, _, _) in enumerate(notes):
+            if note_time <= lyric_time:
+                best_note = i
+            else:
+                break
+        self.current_note_index = best_note
+        self.update_displays()
+        result_text = f"{self.search_index + 1} {lang.get('of')} {len(self.search_results)}: {lyrics[lyric_idx][1]}"
+        self.output.speak(result_text, interrupt=True)
+
     def on_track_select(self, event):
         self.current_pair = event.GetSelection()
         self.current_note_index = 0
         self.last_announced_lyric = None
+        self.last_announced_lyric_index = -1
+        self.search_results = []
+        self.search_index = -1
         self.update_displays()
         self.apply_track_properties()
 
@@ -963,47 +1070,57 @@ class MidiLyricChecker(wx.Frame):
 
     def on_close(self, event):
         self.playing = False
+        if self.play_thread and self.play_thread.is_alive():
+            self.play_thread.join(timeout=0.5)
+        if self.metronome_thread and self.metronome_thread.is_alive():
+            self.metronome_thread.join(timeout=0.5)
         if self.output_port:
             self.output_port.close()
         self.Destroy()
 
+    def _apply_track_pairing(self):
+        """Shared post-pairing setup: process tracks, update UI, announce summary"""
+        self.process_tracks()
+        self.update_track_list()
+
+        if self.track_pairs:
+            self.track_list.SetSelection(0)
+            self.current_pair = 0
+            self.current_note_index = 0
+            self.last_announced_lyric = None
+            self.last_announced_lyric_index = -1
+            self.update_displays()
+
+            total_notes = sum(len(notes) for notes in self.notes)
+            total_lyrics = sum(len(lyrics) for lyrics in self.timed_lyrics)
+            self.output.speak(f"{lang.get('loaded_tracks')} {len(self.track_pairs)} {lang.get('pairs')}, {total_notes} {lang.get('notes_word')}, {total_lyrics} {lang.get('lyrics_found')}", interrupt=True)
+
     # Core functionality
+    def build_track_info(self):
+        """Build track info list from loaded MIDI data"""
+        track_info = []
+        for i, track in enumerate(self.midi_data.tracks):
+            name = f"{lang.get('track')} {i + 1}"
+            for msg in track:
+                if msg.type == 'track_name':
+                    name = f"{lang.get('track')} {i + 1}: {msg.name.strip()}"
+                    break
+            has_notes, has_lyrics = self.analyze_track_content(track)
+            track_info.append((name, has_notes, has_lyrics))
+        return track_info
+
     def load_midi(self, path):
         try:
             # Load MIDI data completely into RAM
-            self.midi_data = copy.deepcopy(MidiFile(path))
+            self.midi_data = MidiFile(path)
             
-            # Analyze tracks
-            track_info = []
-            for i, track in enumerate(self.midi_data.tracks):
-                name = f"{lang.get('track')} {i + 1}"
-                for msg in track:
-                    if msg.type == 'track_name':
-                        name = f"{lang.get('track')} {i + 1}: {msg.name.strip()}"
-                        break
-                
-                has_notes, has_lyrics = self.analyze_track_content(track)
-                track_info.append((name, has_notes, has_lyrics))
-            
+            track_info = self.build_track_info()
+
             # Always show the track pairing dialog
             dlg = TrackPairingDialog(self, track_info)
             if dlg.ShowModal() == wx.ID_OK:
                 self.track_pairs = dlg.get_track_pairs()
-                self.process_tracks()
-                self.update_track_list()
-                
-                total_notes = sum(len(notes) for notes in self.notes)
-                total_lyrics = sum(len(lyrics) for lyrics in self.timed_lyrics)
-                self.output.speak(f"{lang.get('loaded_tracks')} {len(self.track_pairs)} pares, {total_notes} {lang.get('notes_word')}, {total_lyrics} {lang.get('lyrics_found')}", interrupt=True)
-                
-                if self.track_pairs:
-                    self.track_list.SetSelection(0)
-                    self.current_pair = 0
-                    self.current_note_index = 0
-                    self.last_announced_lyric = None
-                    self.update_displays()
-                    
-                # Auto-select MIDI device after successful load
+                self._apply_track_pairing()
                 wx.CallAfter(self.ensure_midi_auto_select)
             else:
                 # User cancelled, clear data
@@ -1033,24 +1150,24 @@ class MidiLyricChecker(wx.Frame):
             if msg.type == 'note_on' and msg.velocity > 0:
                 has_notes = True
                 
-            # Check for lyrics - be very broad in detection
-            elif (msg.type in ['lyrics', 'text', 'marker', 'cue_marker'] or 
-                  hasattr(msg, 'text') or 
-                  hasattr(msg, 'data')):
-                
+            # Check for lyrics via standard types or text attribute
+            elif msg.type in ['lyrics', 'text', 'marker', 'cue_marker'] or hasattr(msg, 'text'):
                 text_content = ""
                 if hasattr(msg, 'text') and msg.text:
                     text_content = str(msg.text).strip()
-                elif hasattr(msg, 'data') and msg.data:
-                    try:
-                        if isinstance(msg.data, bytes):
-                            text_content = msg.data.decode('utf-8', errors='ignore').strip()
-                        else:
-                            text_content = str(msg.data).strip()
-                    except:
-                        pass
-                
-                if text_content and len(text_content) > 0:
+                if text_content:
+                    has_lyrics = True
+
+            # Check sysex messages for embedded lyrics
+            elif msg.type == 'sysex' and hasattr(msg, 'data') and msg.data:
+                try:
+                    if isinstance(msg.data, bytes):
+                        text_content = msg.data.decode('utf-8', errors='ignore').strip()
+                    else:
+                        text_content = str(msg.data).strip()
+                except Exception:
+                    text_content = ""
+                if text_content:
                     has_lyrics = True
         
         return has_notes, has_lyrics
@@ -1085,28 +1202,30 @@ class MidiLyricChecker(wx.Frame):
         
         return track_notes
 
+    @staticmethod
+    def fix_encoding(text):
+        """Fix text that mido decoded as Latin-1 but was actually UTF-8"""
+        try:
+            return text.encode('latin-1').decode('utf-8')
+        except (UnicodeDecodeError, UnicodeEncodeError):
+            return text
+
     def extract_lyrics_from_track(self, track):
         abs_time = 0
         track_lyrics = []
-        
+
         for msg in track:
             abs_time += msg.time
-            
-            # Check for standard lyric types
-            if msg.type in ['lyrics', 'text', 'marker', 'cue_marker']:
+
+            # Check for standard lyric types or any message with text attribute
+            if msg.type in ['lyrics', 'text', 'marker', 'cue_marker'] or (hasattr(msg, 'text') and msg.text):
                 if hasattr(msg, 'text'):
-                    lyric_text = msg.text.strip() if msg.text else ""
+                    lyric_text = self.fix_encoding(msg.text.strip()) if msg.text else ""
                     if lyric_text and lyric_text not in ['/', '\\', '-', '']:
                         track_lyrics.append((abs_time, lyric_text))
-                        
-            # Check for any message with text attribute
-            elif hasattr(msg, 'text') and msg.text:
-                lyric_text = msg.text.strip()
-                if lyric_text and lyric_text not in ['/', '\\', '-', '']:
-                    track_lyrics.append((abs_time, lyric_text))
-                    
-            # Check for data attribute (some MIDI files store lyrics differently)
-            elif hasattr(msg, 'data'):
+
+            # Check sysex messages for embedded lyrics
+            elif msg.type == 'sysex' and hasattr(msg, 'data') and msg.data:
                 try:
                     if isinstance(msg.data, bytes):
                         lyric_text = msg.data.decode('utf-8', errors='ignore').strip()
@@ -1114,7 +1233,7 @@ class MidiLyricChecker(wx.Frame):
                         lyric_text = str(msg.data).strip()
                     if lyric_text and lyric_text not in ['/', '\\', '-', '']:
                         track_lyrics.append((abs_time, lyric_text))
-                except:
+                except Exception:
                     pass
         
         return track_lyrics
@@ -1138,12 +1257,14 @@ class MidiLyricChecker(wx.Frame):
         if not notes:
             current_lyric = " ".join([lyric[1] for lyric in lyrics]) if lyrics else lang.get('no_notes_track')
             self.current_single_lyric = None
+            self.current_lyric_index = -1
             self.lyric_display.SetValue(current_lyric)
             return False
-        
+
         if not lyrics:
             self.lyric_display.SetValue(lang.get('no_lyrics_found'))
             self.current_single_lyric = None
+            self.current_lyric_index = -1
             return False
         
         # Display all lyrics
@@ -1162,27 +1283,21 @@ class MidiLyricChecker(wx.Frame):
         
         if current_position >= 0:
             self.current_single_lyric = lyrics[current_position][1]
+            self.current_lyric_index = current_position
             # Highlight current lyric
             try:
                 start_pos = sum(len(lyrics[i][1]) + 1 for i in range(current_position))
                 end_pos = start_pos + len(lyrics[current_position][1])
                 self.lyric_display.SetSelection(start_pos, end_pos)
                 self.lyric_display.ShowPosition(start_pos)
-            except:
+            except Exception:
                 pass  # If highlighting fails, continue without it
             return True
         else:
-            # No lyric yet, find the most recent one
-            if lyrics:
-                recent_lyrics = [lyric for lyric in lyrics if lyric[0] <= current_note_time]
-                if recent_lyrics:
-                    self.current_single_lyric = recent_lyrics[-1][1]
-                else:
-                    self.current_single_lyric = lyrics[0][1]  # Use first lyric if none match
-            else:
-                self.current_single_lyric = None
-        
-        return False
+            # No lyric at or before current note; use first lyric as preview
+            self.current_single_lyric = lyrics[0][1]
+            self.current_lyric_index = 0
+            return False
 
     def get_current_lyrics(self):
         if self.current_pair >= len(self.timed_lyrics):
@@ -1201,55 +1316,75 @@ class MidiLyricChecker(wx.Frame):
             self.status_display.SetValue(lang.get('no_notes_pair'))
             return
         
-        status_text = f"{lang.get('note')} {self.current_note_index + 1}/{len(notes)}\n"
-        status_text += f"{lang.get('pair_prefix')} {self.current_pair + 1}/{len(self.track_pairs)}\n"
-        
-        # Show track pair info
+        lines = [
+            f"{lang.get('note')} {self.current_note_index + 1}/{len(notes)}",
+            f"{lang.get('pair_prefix')} {self.current_pair + 1}/{len(self.track_pairs)}",
+        ]
+
         if self.current_pair < len(self.track_pairs):
             notes_track, lyrics_track = self.track_pairs[self.current_pair]
-            status_text += f"{lang.get('notes')}: {lang.get('track')} {notes_track + 1}\n"
-            status_text += f"{lang.get('lyrics')}: {lang.get('track')} {lyrics_track + 1 if lyrics_track is not None else lang.get('none')}\n"
-        
-        status_text += f"{lang.get('lyrics_in_pair')} {len(lyrics)}\n"
-        status_text += f"{lang.get('midi_status')} {lang.get('yes') if MIDI_AVAILABLE and self.output_port else lang.get('no')}\n"
-        status_text += f"{lang.get('metronome')}: {lang.get('on') if self.metronome_enabled else lang.get('off')}\n"
-        status_text += f"{lang.get('auto_announce')}: {lang.get('on') if self.auto_announce_lyrics else lang.get('off')}"
-        
-        self.status_display.SetValue(status_text)
+            lines.append(f"{lang.get('notes')}: {lang.get('track')} {notes_track + 1}")
+            lines.append(f"{lang.get('lyrics')}: {lang.get('track')} {lyrics_track + 1 if lyrics_track is not None else lang.get('none')}")
+
+        lines.extend([
+            f"{lang.get('lyrics_in_pair')} {len(lyrics)}",
+            f"{lang.get('midi_status')} {lang.get('yes') if MIDI_AVAILABLE and self.output_port else lang.get('no')}",
+            f"{lang.get('metronome')}: {lang.get('on') if self.metronome_enabled else lang.get('off')}",
+            f"{lang.get('auto_announce')}: {lang.get('on') if self.auto_announce_lyrics else lang.get('off')}",
+            f"{lang.get('note_names')}: {lang.get('on') if self.announce_note_names else lang.get('off')}",
+        ])
+
+        self.status_display.SetValue("\n".join(lines))
 
     def apply_track_properties(self):
-        if MIDI_AVAILABLE and self.output_port and self.current_pair in self.track_properties:
+        if self.current_pair in self.track_properties:
             props = self.track_properties[self.current_pair]
+            midi_channel = props['channel'] - 1  # Convert 1-based to 0-based for MIDI
+            self.safe_send(Message('program_change', channel=midi_channel, program=props['instrument']))
+            self.safe_send(Message('control_change', channel=midi_channel, control=7, value=props['volume']))
+            if props['bank'] > 0:
+                self.safe_send(Message('control_change', channel=midi_channel, control=0, value=props['bank']))
+
+    def safe_send(self, msg):
+        """Send MIDI message with automatic port recovery on failure"""
+        if not MIDI_AVAILABLE or not self.output_port:
+            return False
+        try:
+            self.output_port.send(msg)
+            return True
+        except Exception:
             try:
-                self.output_port.send(Message('program_change', channel=props['channel'], program=props['instrument']))
-                self.output_port.send(Message('control_change', channel=props['channel'], control=7, value=props['volume']))
-                if props['bank'] > 0:
-                    self.output_port.send(Message('control_change', channel=props['channel'], control=0, value=props['bank']))
-            except:
+                self.output_port.close()
+            except Exception:
                 pass
+            self.output_port = None
+            if self.auto_select_default_midi():
+                try:
+                    self.output_port.send(msg)
+                    return True
+                except Exception:
+                    self.output_port = None
+            return False
 
     def play_note(self, note, channel=0):
-        if MIDI_AVAILABLE and self.output_port:
-            try:
-            # Send all notes off first to stop any previous notes
-                self.output_port.send(Message('control_change', channel=channel, control=123, value=0))
-            # Play the note
-                self.output_port.send(Message('note_on', note=note, velocity=100, channel=channel))
-            # For single note preview, still use the short duration
-                time.sleep(0.1)
-                self.output_port.send(Message('note_off', note=note, velocity=100, channel=channel))
-            except:
-                pass    
+        self.safe_send(Message('control_change', channel=channel, control=123, value=0))
+        self.safe_send(Message('note_on', note=note, velocity=100, channel=channel))
+        wx.CallLater(100, self._send_note_off, note, channel)
+
+    def _send_note_off(self, note, channel):
+        self.safe_send(Message('note_off', note=note, velocity=100, channel=channel))
+
+    def _set_note_index(self, index):
+        """Thread-safe setter for current_note_index, called via wx.CallAfter"""
+        self.current_note_index = index
+
     def play_metronome_beat(self, is_downbeat=True):
-        if MIDI_AVAILABLE and self.output_port and self.metronome_enabled:
-            try:
-                note = self.downbeat_note if is_downbeat else self.upbeat_note
-                self.output_port.send(Message('note_on', note=note, velocity=127, channel=9))
-                time.sleep(0.1)
-                self.output_port.send(Message('note_off', note=note, velocity=127, channel=9))
-            except:
-                pass
-    
+        if self.metronome_enabled:
+            note = self.downbeat_note if is_downbeat else self.upbeat_note
+            self.safe_send(Message('note_on', note=note, velocity=127, channel=9))
+            time.sleep(0.1)
+            self.safe_send(Message('note_off', note=note, velocity=127, channel=9))
+
     def start_metronome(self, tempo, time_sig_num=4, start_time=None):
         """Start synchronized metronome thread"""
         def _metronome():
@@ -1384,21 +1519,26 @@ class MidiLyricChecker(wx.Frame):
             
             # Play from current position
             accumulated_time = 0
+            pair_notes = self.notes[self.current_pair]
+            next_note_ptr = self.current_note_index  # Advancing pointer instead of O(n) scan
+            quarter_beat = self.midi_data.ticks_per_beat / 4
+            skipped_messages = 0
+
             for i, msg in enumerate(track):
                 if i < start_message_index:
                     accumulated_time += msg.time
                     continue
-                    
+
                 if not self.playing:
                     break
-                
+
                 # Get current tempo for MIDI playback timing
                 current_tempo = self.get_current_tempo(accumulated_time, tempo_changes)
-                
+
                 # Sleep for the message timing
                 if msg.time > 0:
                     sleep_time = (msg.time / self.midi_data.ticks_per_beat) * (60.0 / current_tempo)
-                    
+
                     # Only break into chunks if sleep time is significant (>100ms)
                     if sleep_time > 0.1:
                         while sleep_time > 0 and self.playing:
@@ -1407,52 +1547,43 @@ class MidiLyricChecker(wx.Frame):
                             sleep_time -= chunk
                     else:
                         time.sleep(sleep_time)
-                
+
                 if not self.playing:
                     break
-                
+
                 accumulated_time += msg.time
-                
+
                 # Send the MIDI message
-                if MIDI_AVAILABLE and self.output_port:
-                    try:
-                        # Apply track properties if available
-                        if msg.type in ['note_on', 'note_off', 'program_change', 'control_change']:
-                            # Create a copy of the message with potentially modified channel
-                            msg_dict = msg.dict()
-                            if self.current_pair in self.track_properties:
-                                if 'channel' in msg_dict:
-                                    msg_dict['channel'] = self.track_properties[self.current_pair]['channel']
-                            
-                            modified_msg = Message(**msg_dict)
-                            self.output_port.send(modified_msg)
-                        else:
-                            # Send other messages as-is
-                            self.output_port.send(msg)
-                            
-                    except Exception as e:
-                        pass  # Continue playing even if individual messages fail
-                
+                if msg.type in ['note_on', 'note_off', 'program_change', 'control_change']:
+                    msg_copy = msg.copy()
+                    if self.current_pair in self.track_properties:
+                        if hasattr(msg_copy, 'channel'):
+                            msg_copy = msg_copy.copy(channel=self.track_properties[self.current_pair]['channel'] - 1)
+                    if not self.safe_send(msg_copy):
+                        skipped_messages += 1
+                elif hasattr(msg, 'channel'):
+                    if not self.safe_send(msg):
+                        skipped_messages += 1
+
                 # Update UI position for note_on messages
                 if msg.type == 'note_on' and msg.velocity > 0:
-                    # Find corresponding note index
-                    for note_idx, (note_time, note, channel) in enumerate(self.notes[self.current_pair]):
-                        if abs(note_time - accumulated_time) < self.midi_data.ticks_per_beat / 4:  # Within quarter beat
-                            self.current_note_index = note_idx
-                            if note_idx % 5 == 0:  # Update UI every 5 notes
-                                wx.CallAfter(self.update_displays)
-                                wx.CallAfter(self.announce_lyric_if_changed)
-                            break
-            
+                    # Advance pointer to matching note (O(1) amortized)
+                    while next_note_ptr < len(pair_notes) - 1 and pair_notes[next_note_ptr][0] < accumulated_time - quarter_beat:
+                        next_note_ptr += 1
+                    if next_note_ptr < len(pair_notes) and abs(pair_notes[next_note_ptr][0] - accumulated_time) < quarter_beat:
+                        wx.CallAfter(self._set_note_index, next_note_ptr)
+                        if next_note_ptr % 5 == 0:  # Update UI every 5 notes
+                            wx.CallAfter(self.update_displays)
+                            wx.CallAfter(self.announce_lyric_if_changed)
+                        next_note_ptr += 1
+
             # Clean up - send all notes off
-            if MIDI_AVAILABLE and self.output_port:
-                try:
-                    for ch in range(16):
-                        self.output_port.send(Message('control_change', channel=ch, control=123, value=0))
-                except:
-                    pass
-            
+            for ch in range(16):
+                self.safe_send(Message('control_change', channel=ch, control=123, value=0))
+
             wx.CallAfter(self.update_displays)
+            if skipped_messages > 0:
+                wx.CallAfter(self.output.speak, f"{skipped_messages} {lang.get('messages_skipped')}", True)
             self.playing = False
 
         self.play_thread = threading.Thread(target=_play, daemon=True)
