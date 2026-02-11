@@ -17,6 +17,11 @@ download: Fully compiled binary .exe file [from releases section](https://github
 - **Memory-based loading** - Loads file into RAM for quick refresh without reopening
 - **Bilingual interface** - English and Spanish (default Spanish) with dynamic switching, no need to restart program at all.
 - **Keyboard shortcuts** - For most tasks and functions
+- **Copy lyrics** - Copy all lyrics from current track to clipboard (Ctrl+C) with spoken confirmation. Useful for editing or sharing lyrics externally.
+- **Note name announcement** - Optional pitch announcement (C4, F#5) during navigation (F7). Helps verify note-to-syllable alignment when MIDI playback isn't available.
+- **Search lyrics** - Find specific syllables and jump to position (Ctrl+F). Press F3 to cycle through all matches. Essential for reviewing long songs.
+- **Auto MIDI recovery** - Reconnects automatically if device disconnects mid-session. Prevents silent failures when USB MIDI devices are unplugged.
+- **Accented characters** - Properly displays á, ñ, and other accented characters in Spanish, Portuguese, and other languages.
 
 ##  Requirements for building from source:
 
@@ -33,7 +38,7 @@ download: Fully compiled binary .exe file [from releases section](https://github
 ## How to Use
 
 ### program overview
-The app has three main elements: a list view with tracks, a lyrics display field, and a status field. You must load a file first. You can select the track that will be played using the list. Only one track plays at a time. The lyrics field will highlight and scroll the lyrics. Accented characters due to midi limitations will be shown as some strange symbols, this will hopefully be fixed at some point. The status field displays the note you are on, say, three out of 50, and the syllable as well, the tempo and the selected tracks for notes and lyrics.
+The app has three main elements: a list view with tracks, a lyrics display field, and a status field. You must load a file first. You can select the track that will be played using the list. Only one track plays at a time. The lyrics field will highlight and scroll the lyrics. Accented characters are now displayed correctly. The status field displays the note you are on, say, three out of 50, and the syllable as well, the tempo and the selected tracks for notes and lyrics.
 Some notation or karaoke programs could put notes in one track, lyrics in another track, or both notes and lyrics in the same track. The program supports both and has automatic detection. To start, open a file. You will then select track pairs for: One track containing notes, and another track containing lyrics, or  simply accept or check the default detection. It is possible that lyrics may be incorrectly displayed for a track, but this will depend on the specific knoledge of which track has the corresponding lyrics to the notes track. If there are many voices to check in a file, in the case of chorales, you can select one or many pairs to review. There is also the possibility of  pairing a track with notes and no lyrics to use with instrumental accompanying parts for example.
 
 ### Navigation and playback controls
@@ -41,13 +46,17 @@ Some notation or karaoke programs could put notes in one track, lyrics in anothe
 - **Alt + Left/Right arrows** - Navigate between notes. Each syllable will be announced. In the case of a melisma (several notes using one syllable) the announcement will change only when the syllable changes.
 - **Home/End** - Go to beginning/end of track
 - **Page Up/Page Down** - Jump backward/forward by 8 notes
+- **F3** - Find next match (after using Ctrl+F)
 - **F4** - Toggle metronome
 - **F6** - Toggle auto lyrics announcement
+- **F7** - Toggle note name announcement
+- **Ctrl+C** - Copy lyrics to clipboard
+- **Ctrl+F** - Find in lyrics
 
 ### Menus, Options
 - **File > Open MIDI File** (Ctrl+O) - Load a new MIDI file
 - **File > Configure Tracks** (Ctrl+T) - Reconfigure track pairs
-- **File > Clear** (Ctrl+C) - Clear current file
+- **File > Clear** (Ctrl+W) - Clear current file
 - **File > Refresh** (F5) - Reload current file
 - **File > Select midi device** Choose a different output device or select one of no default midi device is found.
 - **File > Track Properties** (Ctrl+P) - Configure MIDI channel, instrument, bank, volume for a track
@@ -113,6 +122,11 @@ Descargar: Archivo ejecutable binario (compilado) [desde la sección releases](h
 - **Carga en memoria** - Carga archivo en memoria RAM para actualización rápida sin reabrir archivo o reiniciar el programa.
 - **Interfaz bilingüe** - Inglés y español (predeterminado español) con cambio dinámico entre idiomas
 - **Atajos de teclado** - Para la mayoría de tareas y funciones
+- **Copiar letras** - Copiar todas las letras de la pista actual al portapapeles (Ctrl+C) con confirmación hablada. Útil para editar o compartir letras externamente.
+- **Anuncio de nombres de nota** - Anuncio opcional de tono en cifrado americano (C4, F#5) durante navegación (F7). Ayuda a verificar la alineación nota-sílaba cuando no hay reproducción MIDI disponible.
+- **Buscar en letras** - Buscar sílabas específicas y saltar a su posición (Ctrl+F). Presiona F3 para recorrer todas las coincidencias. Esencial para revisar canciones largas.
+- **Recuperación automática MIDI** - Reconecta automáticamente si el dispositivo se desconecta durante la sesión. Previene fallos silenciosos cuando se desconectan dispositivos MIDI USB.
+- **Caracteres acentuados** - Muestra correctamente á, ñ y otros caracteres acentuados en español, portugués y otros idiomas.
 
 ## Requisitos para construir desde código fuente
 
@@ -128,7 +142,7 @@ Descargar: Archivo ejecutable binario (compilado) [desde la sección releases](h
 ## Cómo usar
 
 ### Descripción general del programa
-La aplicación tiene tres elementos principales: una vista de lista con pistas, un campo de visualización de letras y un campo de estado. Primero se debe cargar un archivo. se puede seleccionar la pista que se reproducirá usando la lista. Solo una pista se reproduce a la vez. El campo de letras subraya y desplaza la letra a medida que se reproduce el archivo. Debido a las limitaciones MIDI los caracteres acentuados se mostrarán como algunos símbolos extraños, con suerte solucionaré esto en algún momento. El campo de estado muestra la nota en la que se encuentra, digamos, tres de 50, y la sílaba también, el tempo actual, y las pistas que fueron seleccionadas para notas y letras.
+La aplicación tiene tres elementos principales: una vista de lista con pistas, un campo de visualización de letras y un campo de estado. Primero se debe cargar un archivo. se puede seleccionar la pista que se reproducirá usando la lista. Solo una pista se reproduce a la vez. El campo de letras subraya y desplaza la letra a medida que se reproduce el archivo. Los caracteres acentuados ahora se muestran correctamente. El campo de estado muestra la nota en la que se encuentra, digamos, tres de 50, y la sílaba también, el tempo actual, y las pistas que fueron seleccionadas para notas y letras.
 Algunos programas de notación o karaoke podrían poner notas en una pista, letras en otra pista, o ambas: notas y letras en la misma pista. El programa admite ambos casos y tiene detección automática. Para comenzar, abra un archivo midi. Luego deberá seleccionar las parejas de pistas, una que contenga notas y otra que contenga letras, o simplemente acepte o revise la detección automática. Es posible que las letras no se muestren correctamente, pero ya dependerá del conocimiento exacto de cual pista con letra corresponde a cual pista con notas. Si hay muchas voces para verificar en un archivo, en el caso de los corales, se puede seleccionar una o varias parejas para revisar. También existe la posibilidad de combinar una pista con notas con la opción sin letras, para pistas que tienen acompañamiento instrumental por ejemplo.
 
 ### Controles de Navegación y reproducción
@@ -136,13 +150,17 @@ Algunos programas de notación o karaoke podrían poner notas en una pista, letr
 - **Alt + Flechas izquierda/derecha** - Navegar manualmente entre notas. Se anunciará cada sílaba. En el caso de melisma (varias notas que usan la misma sílaba) se anunciará solo cuando cambie la sílaba.
 - **Inicio/Fin** - Ir al principio/final
 - **Retroceso /Avance Página** - Saltar hacia atrás/adelante 8 notas
+- **F3** - Buscar siguiente coincidencia (después de usar Ctrl+F)
 - **F4** - Encender apagar metrónomo
 - **F6** - Encender apagar anuncio  automático de letras
+- **F7** - Encender apagar anuncio de nombres de nota
+- **Ctrl+C** - Copiar letras al portapapeles
+- **Ctrl+F** - Buscar en letras
 
 ### Opciones del Menú
 - **Archivo > Abrir Archivo MIDI** (Ctrl+O) - Cargar nuevo archivo MIDI
 - **Archivo > Configurar Pistas** (Ctrl+T) - Reconfigurar parejas de pistas
-- **Archivo > Limpiar** (Ctrl+C) - Limpiar o cerrar archivo actual, descargar de memoria.
+- **Archivo > Limpiar** (Ctrl+W) - Limpiar o cerrar archivo actual, descargar de memoria.
 - **Archivo > Actualizar** (F5) - Recargar archivo actual
 - **Archivo > Seleccionar dispositivo MIDI** - Elija un dispositivo de salida diferente o seleccione uno si no se encuentra el dispositivo MIDI predeterminado.
 - **Archivo > Propiedades de Pista** (Ctrl+P) - Configurar pista MIDI, instrumento, banco, volumen
