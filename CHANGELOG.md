@@ -1,4 +1,16 @@
-# MIDI Lyric Checker v3.1 - Changelog / cambios en versión 3.1.
+# MIDI Lyric Checker v3.1.1 - Changelog / Cambios
+
+## New Features
+- Select MIDI device shortcut (Ctrl+D) — quickly switch output device without opening the menu
+- Go to note (Ctrl+G) — jump directly to any note by number. Dialog pre-fills with current position so you can note it before a refresh and return instantly after
+
+## Funciones nuevas
+- Atajo para seleccionar dispositivo MIDI (Ctrl+D): cambia el dispositivo de salida rápidamente sin abrir el menú.
+- Ir a nota (Ctrl+G): salta directamente a cualquier nota por número. El diálogo se pre-llena con la posición actual, útil para anotar el punto antes de actualizar y volver exactamente al mismo lugar.
+
+---
+
+# MIDI Lyric Checker v3.1 - Changelog / Cambios
 
 ## Bug Fixes
 - Fixed crash when pressing F5 (Refresh) with no file loaded
@@ -19,9 +31,10 @@
 ## New Features
 - Copy lyrics to clipboard (Ctrl+C) with spoken confirmation
 - Note name announcement toggle (F7) — announces pitch (e.g., C4, F#5) when navigating with Alt+Arrows
-- Find in lyrics (Ctrl+F) with Find Next (F3) — search syllables and jump to matching positions
+- Find in lyrics (Ctrl+F) with Find Next (F3) and Find Previous (Shift+F3) — search syllables and cycle through all matches in both directions
 - MIDI port auto-recovery — automatically reconnects if the MIDI device is lost mid-session
 - Skipped MIDI message reporting — announces count of failed messages after playback ends
+- Command-line file opening — a MIDI file path can now be passed as an argument on launch (e.g. from external tools like Frescobaldi extensions)
 
 ## Code Quality
 - All silent exception handlers now use `except Exception` instead of bare `except`
@@ -29,8 +42,6 @@
 - Removed unused internal variables
 - Application now waits for playback and metronome threads to finish before closing
 - Thread-safe UI updates during playback
-
-# MIDI Lyric Checker v3.1 - Ccambios
 
 ## Arreglos de fallos, bugs
 - Corregido el cierre inesperado al presionar F5 (Actualizar) sin archivos cargados.
@@ -50,10 +61,11 @@
 
 ## Funciones nuevas
 - Copiar letra al portapapeles (Ctrl+C) y su confirmación hablada.
-- Opción para anunciar el nombre de la nota en cifrado americano (F7): anuncia el tono (ej. C4, F#5) al navegar con Alt+Flechas. útil para cuando no hay audio disponible.
-- Buscar en la letra (Ctrl+F) con Buscar Siguiente (F3): permite buscar sílabas y saltar a su posición.
+- Opción para anunciar el nombre de la nota en cifrado americano (F7): anuncia el tono (ej. C4, F#5) al navegar con Alt+Flechas. Útil para cuando no hay audio disponible.
+- Buscar en la letra (Ctrl+F) con Buscar Siguiente (F3) y Buscar Anterior (Shift+F3): permite buscar sílabas y recorrer todas las coincidencias en ambas direcciones.
 - Autorrecuperación de puerto MIDI: reconexión automática si el dispositivo se pierde durante la sesión.
 - Reporte de mensajes MIDI omitidos: anuncia el recuento de mensajes fallidos al terminar la reproducción.
+- Apertura desde línea de comandos: ahora se puede pasar una ruta de archivo MIDI como argumento al iniciar el programa (por ejemplo, desde herramientas externas como extensiones de Frescobaldi).
 
 ## Calidad del código
 - Todos los manejadores de excepciones silenciosos ahora usan `except Exception` en lugar de un `except` genérico.

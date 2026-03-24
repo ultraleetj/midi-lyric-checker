@@ -64,12 +64,12 @@ STRINGS = {
         'enable_metronome': 'Enable Metronome',
         'track_pairs': 'Track Pairs:',
         'status': 'Status:',
-        'controls': 'Space=Play/Pause, Alt+Arrows=Navigate, Home/End=Start/End, F3=Find Next, F4=Metronome, F6=Announce, F7=Notes, Ctrl+C=Copy, Ctrl+F=Find',
+        'controls': 'Space=Play/Pause, Alt+Arrows=Navigate, Home/End=Start/End, F3=Find Next, Shift+F3=Find Prev, F4=Metronome, F6=Announce, F7=Notes, Ctrl+C=Copy, Ctrl+D=Device, Ctrl+F=Find, Ctrl+G=Go To',
         'open_midi': '&Open MIDI File\tCtrl+O',
         'configure_tracks': '&Configure Tracks\tCtrl+T',
         'clear': '&Clear\tCtrl+W',
         'refresh': '&Refresh file\tF5',
-        'select_midi_device': '&Select MIDI Device',
+        'select_midi_device': '&Select MIDI Device\tCtrl+D',
         'track_properties_menu': '&Track Properties\tCtrl+P',
         'metronome_settings_menu': '&Metronome Settings\tCtrl+M',
         'toggle_metronome': '&Toggle Metronome\tF4',
@@ -140,10 +140,15 @@ STRINGS = {
         'note_names': 'Note names:',
         'find': '&Find in Lyrics\tCtrl+F',
         'find_next': 'Find &Next\tF3',
+        'find_previous': 'Find &Previous\tShift+F3',
         'search_title': 'Find in Lyrics',
         'search_prompt': 'Search for:',
         'not_found': 'Not found.',
-        'no_lyrics_to_search': 'No lyrics to search.'
+        'no_lyrics_to_search': 'No lyrics to search.',
+        'search_results_found': 'results found.',
+        'go_to_note': '&Go to Note\tCtrl+G',
+        'go_to_note_title': 'Go to Note',
+        'go_to_note_invalid': 'Please enter a valid note number.'
     },
     'es': {
         'title': 'Verificador de Letras MIDI',
@@ -168,12 +173,12 @@ STRINGS = {
         'enable_metronome': 'Activar Metrónomo',
         'track_pairs': 'Parejas de Pistas:',
         'status': 'Estado:',
-        'controls': 'Espacio=Reproducir/Pausa, Alt+Flechas=Navegar, Inicio/Fin=Principio/Final, F3=Buscar Sig., F4=Metrónomo, F6=Anuncios, F7=Notas, Ctrl+C=Copiar, Ctrl+F=Buscar',
+        'controls': 'Espacio=Reproducir/Pausa, Alt+Flechas=Navegar, Inicio/Fin=Principio/Final, F3=Buscar Sig., Shift+F3=Buscar Ant., F4=Metrónomo, F6=Anuncios, F7=Notas, Ctrl+C=Copiar, Ctrl+D=Dispositivo, Ctrl+F=Buscar, Ctrl+G=Ir A',
         'open_midi': '&Abrir Archivo MIDI\tCtrl+O',
         'configure_tracks': '&Configurar Pistas\tCtrl+T',
         'clear': '&Limpiar\tCtrl+W',
         'refresh': '&Actualizar\tF5',
-        'select_midi_device': '&Seleccionar Dispositivo MIDI',
+        'select_midi_device': '&Seleccionar Dispositivo MIDI\tCtrl+D',
         'track_properties_menu': '&Propiedades de Pista\tCtrl+P',
         'metronome_settings_menu': '&Configuración de Metrónomo\tCtrl+M',
         'toggle_metronome': '&Alternar Metrónomo\tF4',
@@ -244,10 +249,15 @@ STRINGS = {
         'note_names': 'Nombres de notas:',
         'find': '&Buscar en Letras\tCtrl+F',
         'find_next': 'Buscar &Siguiente\tF3',
+        'find_previous': 'Buscar &Anterior\tShift+F3',
         'search_title': 'Buscar en Letras',
         'search_prompt': 'Buscar:',
         'not_found': 'No encontrado.',
-        'no_lyrics_to_search': 'No hay letras para buscar.'
+        'no_lyrics_to_search': 'No hay letras para buscar.',
+        'search_results_found': 'resultados encontrados.',
+        'go_to_note': '&Ir a Nota\tCtrl+G',
+        'go_to_note_title': 'Ir a Nota',
+        'go_to_note_invalid': 'Por favor ingresa un número de nota válido.'
     }
 }
 
@@ -686,6 +696,8 @@ class MidiLyricChecker(wx.Frame):
         file_menu.Append(111, lang.get('copy_lyrics'))
         file_menu.Append(113, lang.get('find'))
         file_menu.Append(114, lang.get('find_next'))
+        file_menu.Append(116, lang.get('find_previous'))
+        file_menu.Append(115, lang.get('go_to_note'))
         file_menu.AppendSeparator()
         file_menu.Append(110, lang.get('quit'))
         menubar.Append(file_menu, lang.get('file_menu'))
@@ -713,6 +725,8 @@ class MidiLyricChecker(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_toggle_note_names, id=112)
         self.Bind(wx.EVT_MENU, self.on_find, id=113)
         self.Bind(wx.EVT_MENU, self.on_find_next, id=114)
+        self.Bind(wx.EVT_MENU, self.on_find_previous, id=116)
+        self.Bind(wx.EVT_MENU, self.on_go_to_note, id=115)
         self.Bind(wx.EVT_MENU, self.on_language_english, id=201)
         self.Bind(wx.EVT_MENU, self.on_language_spanish, id=202)
 
@@ -721,6 +735,7 @@ class MidiLyricChecker(wx.Frame):
         modifiers = event.GetModifiers()
         alt = bool(modifiers & wx.MOD_ALT)
         ctrl = bool(modifiers & wx.MOD_CONTROL)
+        shift = bool(modifiers & wx.MOD_SHIFT)
 
         if (alt and ctrl) or (alt and keycode == wx.WXK_F4):
             event.Skip()
@@ -751,7 +766,9 @@ class MidiLyricChecker(wx.Frame):
             self.on_toggle_auto_announce(event)
         elif keycode == wx.WXK_F7 and not alt and not ctrl:
             self.on_toggle_note_names(event)
-        elif keycode == wx.WXK_F3 and not alt and not ctrl:
+        elif keycode == wx.WXK_F3 and shift and not alt and not ctrl:
+            self.on_find_previous(event)
+        elif keycode == wx.WXK_F3 and not shift and not alt and not ctrl:
             self.on_find_next(event)
         elif alt and keycode == wx.WXK_RIGHT and not ctrl:
             self.navigate_next()
@@ -1030,7 +1047,23 @@ class MidiLyricChecker(wx.Frame):
                 if self.search_term in text.lower():
                     self.search_results.append(i)
             if self.search_results:
-                self.on_find_next(event)
+                self.search_index = 0
+                lyric_idx = self.search_results[0]
+                lyrics = self.timed_lyrics[self.current_pair]
+                lyric_time = lyrics[lyric_idx][0]
+                notes = self.notes[self.current_pair]
+                best_note = 0
+                for i, (note_time, _, _) in enumerate(notes):
+                    if note_time <= lyric_time:
+                        best_note = i
+                    else:
+                        break
+                self.current_note_index = best_note
+                self.update_displays()
+                total = len(self.search_results)
+                first_result = f"{lyrics[lyric_idx][1]}, 1 {lang.get('of')} {total}, pos. {self.current_note_index + 1}"
+                self.output.speak(f"{total} {lang.get('search_results_found')}", interrupt=True)
+                wx.CallLater(100, self.output.speak, first_result, False)
             else:
                 self.output.speak(lang.get('not_found'), interrupt=True)
         dlg.Destroy()
@@ -1052,8 +1085,53 @@ class MidiLyricChecker(wx.Frame):
                 break
         self.current_note_index = best_note
         self.update_displays()
-        result_text = f"{self.search_index + 1} {lang.get('of')} {len(self.search_results)}: {lyrics[lyric_idx][1]}"
+        result_text = f"{lyrics[lyric_idx][1]}, {self.search_index + 1} {lang.get('of')} {len(self.search_results)}, pos. {self.current_note_index + 1}"
         self.output.speak(result_text, interrupt=True)
+
+    def on_find_previous(self, event):
+        if not self.search_results:
+            self.output.speak(lang.get('not_found'), interrupt=True)
+            return
+        if self.search_index <= 0:
+            self.search_index = len(self.search_results) - 1
+        else:
+            self.search_index -= 1
+        lyric_idx = self.search_results[self.search_index]
+        lyrics = self.timed_lyrics[self.current_pair]
+        lyric_time = lyrics[lyric_idx][0]
+        notes = self.notes[self.current_pair]
+        best_note = 0
+        for i, (note_time, _, _) in enumerate(notes):
+            if note_time <= lyric_time:
+                best_note = i
+            else:
+                break
+        self.current_note_index = best_note
+        self.update_displays()
+        result_text = f"{lyrics[lyric_idx][1]}, {self.search_index + 1} {lang.get('of')} {len(self.search_results)}, pos. {self.current_note_index + 1}"
+        self.output.speak(result_text, interrupt=True)
+
+    def on_go_to_note(self, event):
+        if not self.notes or self.current_pair >= len(self.notes):
+            return
+        notes = self.notes[self.current_pair]
+        if not notes:
+            return
+        total = len(notes)
+        dlg = wx.TextEntryDialog(self, f"1 - {total}:", lang.get('go_to_note_title'),
+                                 value=str(self.current_note_index + 1))
+        if dlg.ShowModal() == wx.ID_OK:
+            try:
+                n = int(dlg.GetValue().strip())
+                if 1 <= n <= total:
+                    self.current_note_index = n - 1
+                    self.update_displays()
+                    self.output.speak(f"{lang.get('position')} {n}", interrupt=True)
+                else:
+                    self.output.speak(lang.get('go_to_note_invalid'), interrupt=True)
+            except ValueError:
+                self.output.speak(lang.get('go_to_note_invalid'), interrupt=True)
+        dlg.Destroy()
 
     def on_track_select(self, event):
         self.current_pair = event.GetSelection()
@@ -1593,4 +1671,6 @@ if __name__ == '__main__':
     app = wx.App(False)
     frame = MidiLyricChecker()
     frame.Show()
+    if len(sys.argv) > 1:
+        wx.CallAfter(frame.load_midi, sys.argv[1])
     app.MainLoop()

@@ -17,11 +17,14 @@ download: Fully compiled binary .exe file [from releases section](https://github
 - **Memory-based loading** - Loads file into RAM for quick refresh without reopening
 - **Bilingual interface** - English and Spanish (default Spanish) with dynamic switching, no need to restart program at all.
 - **Keyboard shortcuts** - For most tasks and functions
+- **Select MIDI device shortcut** - Quickly switch MIDI output device with Ctrl+D, without navigating the menu.
+- **Go to note** - Jump directly to any note by number (Ctrl+G). The dialog pre-fills with your current position, making it easy to note your place before a refresh and return to it instantly.
 - **Copy lyrics** - Copy all lyrics from current track to clipboard (Ctrl+C) with spoken confirmation. Useful for editing or sharing lyrics externally.
 - **Note name announcement** - Optional pitch announcement (C4, F#5) during navigation (F7). Helps verify note-to-syllable alignment when MIDI playback isn't available.
-- **Search lyrics** - Find specific syllables and jump to position (Ctrl+F). Press F3 to cycle through all matches. Essential for reviewing long songs.
+- **Search lyrics** - Find specific syllables and jump to position (Ctrl+F). Press F3 / Shift+F3 to cycle forward and backward through all matches. Essential for reviewing long songs.
 - **Auto MIDI recovery** - Reconnects automatically if device disconnects mid-session. Prevents silent failures when USB MIDI devices are unplugged.
 - **Accented characters** - Properly displays á, ñ, and other accented characters in Spanish, Portuguese, and other languages.
+- **Command-line file opening** - Accepts a MIDI file path as a command-line argument, allowing external tools (such as Frescobaldi extensions) to open files directly on launch.
 
 ##  Requirements for building from source:
 
@@ -47,11 +50,14 @@ Some notation or karaoke programs could put notes in one track, lyrics in anothe
 - **Home/End** - Go to beginning/end of track
 - **Page Up/Page Down** - Jump backward/forward by 8 notes
 - **F3** - Find next match (after using Ctrl+F)
+- **Shift+F3** - Find previous match
 - **F4** - Toggle metronome
 - **F6** - Toggle auto lyrics announcement
 - **F7** - Toggle note name announcement
 - **Ctrl+C** - Copy lyrics to clipboard
+- **Ctrl+D** - Select MIDI output device
 - **Ctrl+F** - Find in lyrics
+- **Ctrl+G** - Go to note number
 
 ### Menus, Options
 - **File > Open MIDI File** (Ctrl+O) - Load a new MIDI file
@@ -122,11 +128,14 @@ Descargar: Archivo ejecutable binario (compilado) [desde la sección releases](h
 - **Carga en memoria** - Carga archivo en memoria RAM para actualización rápida sin reabrir archivo o reiniciar el programa.
 - **Interfaz bilingüe** - Inglés y español (predeterminado español) con cambio dinámico entre idiomas
 - **Atajos de teclado** - Para la mayoría de tareas y funciones
+- **Atajo para dispositivo MIDI** - Cambia el dispositivo de salida MIDI rápidamente con Ctrl+D, sin navegar por el menú.
+- **Ir a nota** - Salta directamente a cualquier nota por número (Ctrl+G). El diálogo se llena anteriormente con la posición actual, facilitando volver al mismo punto después de actualizar el archivo.
 - **Copiar letras** - Copiar todas las letras de la pista actual al portapapeles (Ctrl+C) con confirmación hablada. Útil para editar o compartir letras externamente.
 - **Anuncio de nombres de nota** - Anuncio opcional de tono en cifrado americano (C4, F#5) durante navegación (F7). Ayuda a verificar la alineación nota-sílaba cuando no hay reproducción MIDI disponible.
-- **Buscar en letras** - Buscar sílabas específicas y saltar a su posición (Ctrl+F). Presiona F3 para recorrer todas las coincidencias. Esencial para revisar canciones largas.
+- **Buscar en letras** - Buscar sílabas específicas y saltar a su posición (Ctrl+F). Presiona F3 / Shift+F3 para recorrer las coincidencias hacia adelante y hacia atrás. Esencial para revisar canciones largas.
 - **Recuperación automática MIDI** - Reconecta automáticamente si el dispositivo se desconecta durante la sesión. Previene fallos silenciosos cuando se desconectan dispositivos MIDI USB.
 - **Caracteres acentuados** - Muestra correctamente á, ñ y otros caracteres acentuados en español, portugués y otros idiomas.
+- **Apertura desde línea de comandos** - Acepta una ruta de archivo MIDI como argumento al iniciar, lo que permite a herramientas externas (como extensiones de Frescobaldi) abrir archivos directamente al arrancar el programa.
 
 ## Requisitos para construir desde código fuente
 
@@ -151,11 +160,14 @@ Algunos programas de notación o karaoke podrían poner notas en una pista, letr
 - **Inicio/Fin** - Ir al principio/final
 - **Retroceso /Avance Página** - Saltar hacia atrás/adelante 8 notas
 - **F3** - Buscar siguiente coincidencia (después de usar Ctrl+F)
+- **Shift+F3** - Buscar coincidencia anterior
 - **F4** - Encender apagar metrónomo
 - **F6** - Encender apagar anuncio  automático de letras
 - **F7** - Encender apagar anuncio de nombres de nota
 - **Ctrl+C** - Copiar letras al portapapeles
+- **Ctrl+D** - Seleccionar dispositivo MIDI de salida
 - **Ctrl+F** - Buscar en letras
+- **Ctrl+G** - Ir a número de nota
 
 ### Opciones del Menú
 - **Archivo > Abrir Archivo MIDI** (Ctrl+O) - Cargar nuevo archivo MIDI
